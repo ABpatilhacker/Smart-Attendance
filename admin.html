@@ -1,105 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Dashboard</title>
-<link rel="stylesheet" href="style.css">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
 
-<!-- Firebase Libraries -->
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-<script src="./firebase.js"></script>
-
-<style>
-body { font-family: Arial, sans-serif; background:#f4f4f9; margin:0; padding:0; }
-header { background:#4CAF50; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center; }
-header h1 { margin:0; font-size:1.5rem; }
-.btn { padding:6px 12px; margin:2px; border:none; cursor:pointer; border-radius:4px; }
-.logout { background:#F44336; color:white; }
-.dashboard-container { padding:15px; }
-.teacher-card { background:white; padding:10px; margin:10px 0; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-.teacher-card h3 { margin:0 0 5px 0; }
-.teacher-card ul { margin:0; padding-left:20px; }
-</style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="firebase.js"></script>
 </head>
 <body>
 
-<header>
-  <h1>🧑‍💼 Admin Dashboard</h1>
-  <button class="btn logout" onclick="logout()">Logout</button>
-</header>
+<div class="topbar">
+  <h2>Admin Dashboard</h2>
+  <button class="btn danger" onclick="auth.signOut()">Logout</button>
+</div>
 
-<div class="dashboard-container">
-  <button class="btn" onclick="addTeacher()">➕ Add Teacher</button>
-  <h2>All Teachers</h2>
-  <div id="teachers-list"></div>
+<div class="container card">
+  <h3>Add Teacher</h3>
+  <input id="tname" placeholder="Teacher Name">
+  <input id="temail" placeholder="Teacher Email">
+  <input id="tpass" placeholder="Password">
+  <button class="btn primary" onclick="addTeacher()">Add Teacher</button>
 </div>
 
 <script>
-let adminUid = "";
-
-// Check login
-auth.onAuthStateChanged(user => {
-  if(user){
-    adminUid = user.uid;
-    loadTeachers();
-  } else {
-    window.location="login.html";
-  }
-});
-
-// Logout
-function logout(){ auth.signOut().then(()=> window.location="login.html"); }
-
-// Add new teacher
-function addTeacher(){
-  const name = prompt("Enter teacher name:");
-  const email = prompt("Enter teacher email:");
-  const password = prompt("Enter password (for login):");
-  if(!name || !email || !password) return;
-
-  // Create Auth user
-  auth.createUserWithEmailAndPassword(email,password)
-    .then(userCred=>{
-      const teacherUid = userCred.user.uid;
-      // Add to database
-      database.ref(`teachers/${teacherUid}`).set({
-        name: name,
-        email: email,
-        classes: {}
-      }).then(()=>{
-        alert("Teacher added successfully!");
-        loadTeachers();
+function addTeacher() {
+  auth.createUserWithEmailAndPassword(temail.value, tpass.value)
+    .then(cred => {
+      database.ref("users/" + cred.user.uid).set({
+        role: "teacher",
+        name: tname.value
       });
+      alert("Teacher added");
     })
-    .catch(err=>alert(err.message));
-}
-
-// Load all teachers
-function loadTeachers(){
-  const teachersRef = database.ref("teachers");
-  const teachersList = document.getElementById("teachers-list");
-  teachersList.innerHTML = "";
-
-  teachersRef.on("value", snapshot=>{
-    teachersList.innerHTML = "";
-    snapshot.forEach(teacherSnap=>{
-      const teacher = teacherSnap.val();
-      const div = document.createElement("div");
-      div.className = "teacher-card";
-      div.innerHTML = `
-        <h3>${teacher.name} (${teacher.email})</h3>
-        <p>Classes:</p>
-        <ul>
-          ${teacher.classes ? Object.keys(teacher.classes).map(c=>`<li>${c}</li>`).join('') : "<li>No classes yet</li>"}
-        </ul>
-      `;
-      teachersList.appendChild(div);
-    });
-  });
+    .catch(err => alert(err.message));
 }
 </script>
+
 </body>
 </html>

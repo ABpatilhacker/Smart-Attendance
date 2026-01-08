@@ -5,17 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard</title>
 <link rel="stylesheet" href="style.css">
-
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 <script src="firebase.js"></script>
 </head>
 <body>
-
 <div class="sidebar">
   <h2>🧑‍💼 Admin</h2>
-  <a href="#" class="active" onclick="showDashboard()">Dashboard</a>
+  <a href="#" onclick="showDashboard()">Dashboard</a>
   <a href="#" onclick="showAddTeacher()">Add Teacher</a>
   <a href="#" onclick="showTeachers()">All Teachers</a>
   <a href="#" onclick="showStudents()">All Students</a>
@@ -28,11 +26,11 @@
 </div>
 
 <script>
-auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(user=>{
   if(!user) window.location='login.html';
 });
 
-// Show dashboard
+// Dashboard
 function showDashboard(){
   document.getElementById("content").innerHTML="<h3>Welcome Admin!</h3>";
 }
@@ -47,20 +45,19 @@ function showAddTeacher(){
     <button class="btn" onclick="addTeacher()">Add</button>
   `;
 }
-
 function addTeacher(){
   const name=document.getElementById("tname").value;
   const email=document.getElementById("temail").value;
   const pass=document.getElementById("tpass").value;
-  auth.createUserWithEmailAndPassword(email,pass).then(cred=>{
-    const uid=cred.user.uid;
-    database.ref(`teachers/${uid}`).set({name,email,classes:{}});
+  auth.createUserWithEmailAndPassword(email,pass).then(res=>{
+    const uid=res.user.uid;
+    database.ref("teachers/"+uid).set({name,email,classes:{}});
     alert("Teacher added!");
     showAddTeacher();
   }).catch(err=>alert(err.message));
 }
 
-// Show all teachers
+// View teachers
 function showTeachers(){
   const content=document.getElementById("content");
   content.innerHTML="<h3>All Teachers</h3>";
@@ -75,7 +72,7 @@ function showTeachers(){
   });
 }
 
-// Show all students
+// View students
 function showStudents(){
   const content=document.getElementById("content");
   content.innerHTML="<h3>All Students</h3>";

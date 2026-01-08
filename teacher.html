@@ -1,96 +1,70 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Teacher Dashboard</title>
-<link rel="stylesheet" href="style.css">
-
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-<script src="firebase.js"></script>
-</head>
-<body>
-
-<div class="sidebar">
-  <h2>👩‍🏫 Teacher</h2>
-  <a href="#" class="active">My Classes</a>
-  <a href="#" onclick="generateDefaulter()">Defaulter List</a>
-  <a href="#" class="logout-btn" onclick="firebase.auth().signOut().then(()=>window.location='index.html')">Logout</a>
-</div>
-
-<div class="main-content">
-  <h2>Your Classes</h2>
-  <div id="class-list" class="card-container"></div>
-
-  <div id="student-section" class="hidden">
-    <h3 id="class-title"></h3>
-    <div id="students-list"></div>
-  </div>
-</div>
+<!-- Same sidebar, just change functions for teacher -->
+<h2>Your Classes</h2>
+<div id="class-list"></div>
 
 <script>
-let currentTeacherId = "";
-let currentClass = "";
-
-firebase.auth().onAuthStateChanged(user=>{
+let currentTeacherId="";
+auth.onAuthStateChanged(user=>{
   if(!user) window.location='login.html';
-  currentTeacherId = user.uid;
+  currentTeacherId=user.uid;
   loadClasses();
 });
 
+// Load teacher classes
 function loadClasses(){
   database.ref(`teachers/${currentTeacherId}/classes`).once('value', snap=>{
-    const classListDiv=document.getElementById("class-list");
-    classListDiv.innerHTML="";
-    if(!snap.exists()){ classListDiv.innerHTML="<p>No classes assigned</p>"; return; }
-    snap.forEach(cls=>{
-      const div=document.createElement("div");
-      div.className="card";
-      div.innerHTML=`<h3>${cls.key}</h3><button class="btn" onclick="viewClass('${cls.key}')">View Students</button>`;
-      classListDiv.appendChild(div);
+    const div=document.getElementById("class-list");
+    div.innerHTML="";
+    snap.forEach(c=>{
+      const card=document.createElement("div");
+      card.className="card";
+      card.innerHTML=`<h4>${c.key}</h4>
+        <button class="btn" onclick="viewClass('${c.key}')">View Students</button>
+        <button class="btn" onclick="addStudentForm('${c.key}')">Add Student</button>`;
+      div.appendChild(card);
     });
   });
 }
 
+// View students and mark attendance
 function viewClass(className){
-  currentClass=className;
-  document.getElementById("class-title").textContent=`Class: ${className}`;
-  document.getElementById("student-section").classList.remove("hidden");
+  const studentDiv=document.getElementById("main-content");
+  studentDiv.innerHTML=`<h3>${className} Students</h3><div id="students-list"></div>`;
   database.ref(`teachers/${currentTeacherId}/classes/${className}/students`).once("value", snap=>{
-    const studentsList=document.getElementById("students-list");
-    studentsList.innerHTML="";
-    snap.forEach(snapS=>{
-      const s=snapS.val();
+    const list=document.getElementById("students-list");
+    snap.forEach(s=>{
+      const stu=s.val();
       const div=document.createElement("div");
-      div.innerHTML=`<span>${s.name} (Roll: ${snapS.key})</span>
-        <button class="btn present" onclick="markAttendance('${snapS.key}','present',this)">Present</button>
-        <button class="btn absent" onclick="markAttendance('${snapS.key}','absent',this)">Absent</button>`;
-      div.style.margin="10px 0";
-      studentsList.appendChild(div);
+      div.innerHTML=`${stu.name} (Roll: ${s.key})
+        <button class="btn present" onclick="mark('${className}','${s.key}','present',this)">Present</button>
+        <button class="btn absent" onclick="mark('${className}','${s.key}','absent',this)">Absent</button>`;
+      list.appendChild(div);
     });
   });
 }
 
-function markAttendance(roll,status,btn){
+// Mark attendance
+function mark(className, roll, status, btn){
   const date=new Date().toISOString().split('T')[0];
-  database.ref(`teachers/${currentTeacherId}/classes/${currentClass}/attendance/${date}/${roll}`).set(status);
-  const parent=btn.parentElement;
-  parent.querySelectorAll("button").forEach(b=>b.style.background="gray");
-  btn.style.background=status==="present"?"#4CAF50":"#f44336";
+  database.ref(`teachers/${currentTeacherId}/classes/${className}/attendance/${date}/${roll}`).set(status);
+  btn.style.background=status==='present'?'#4CAF50':'#f44336';
 }
 
-function generateDefaulter(){
-  const date=prompt("Enter date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-  if(!date) return;
-  database.ref(`teachers/${currentTeacherId}/classes/${currentClass}/attendance/${date}`).once("value", snap=>{
-    if(!snap.exists()){ alert("No attendance"); return; }
-    let defaulters=[];
-    snap.forEach(snapS=>{ if(snapS.val()==="absent") defaulters.push(snapS.key); });
-    alert(`Defaulters: ${defaulters.join(", ") || "None"}`);
-  });
+// Add student
+function addStudentForm(className){
+  const div=document.getElementById("main-content");
+  div.innerHTML=`<h3>Add Student to ${className}</h3>
+    <input type="text" id="sname" placeholder="Student Name">
+    <input type="text" id="sroll" placeholder="Roll Number">
+    <button class="btn" onclick="addStudent('${className}')">Add</button>`;
+}
+
+function addStudent(className){
+  const name=document.getElementById("sname").value;
+  const roll=document.getElementById("sroll").value;
+  database.ref(`teachers/${currentTeacherId}/classes/${className}/students/${roll}`).set({name});
+  database.ref(`students/${roll}`).set({name, rollNumber:roll});
+  alert("Student added!");
+  loadClasses();
 }
 </script>
-</body>
-</html>

@@ -15,7 +15,7 @@
 
 <header class="dashboard-header">
   <h1>👩‍🏫 Teacher Dashboard</h1>
-  <button class="btn logout" onclick="logout()">Logout</button>
+  <button class="btn logout" onclick="firebase.auth().signOut().then(()=>window.location='index.html')">Logout</button>
 </header>
 
 <div class="dashboard-content">
@@ -33,72 +33,63 @@
 let currentTeacherId = "";
 let currentClass = "";
 
-firebase.auth().onAuthStateChanged(user => {
+firebase.auth().onAuthStateChanged(user=>{
   if(!user) window.location='login.html';
-  currentTeacherId = user.uid; // Assuming teacher UID is used in DB
+  currentTeacherId = user.uid;
   loadClasses();
 });
 
-function loadClasses() {
-  database.ref(`teachers/${currentTeacherId}/classes`).once('value', snap => {
-    const classListDiv = document.getElementById("class-list");
-    classListDiv.innerHTML = "";
-    if(!snap.exists()) { classListDiv.innerHTML="<p>No classes assigned</p>"; return; }
-    snap.forEach(cls => {
-      const div = document.createElement("div");
-      div.className = "card";
-      div.innerHTML = `<h3>${cls.key}</h3>
-                       <button class="btn" onclick="viewClass('${cls.key}')">View Students</button>`;
+function loadClasses(){
+  database.ref(`teachers/${currentTeacherId}/classes`).once('value', snap=>{
+    const classListDiv=document.getElementById("class-list");
+    classListDiv.innerHTML="";
+    if(!snap.exists()){ classListDiv.innerHTML="<p>No classes assigned</p>"; return; }
+    snap.forEach(cls=>{
+      const div=document.createElement("div");
+      div.className="card";
+      div.innerHTML=`<h3>${cls.key}</h3><button class="btn" onclick="viewClass('${cls.key}')">View Students</button>`;
       classListDiv.appendChild(div);
     });
   });
 }
 
-function viewClass(className) {
-  currentClass = className;
-  document.getElementById("class-title").textContent = `Class: ${className}`;
+function viewClass(className){
+  currentClass=className;
+  document.getElementById("class-title").textContent=`Class: ${className}`;
   document.getElementById("student-section").classList.remove("hidden");
-
-  database.ref(`teachers/${currentTeacherId}/classes/${className}/students`).once("value", snap => {
-    const studentsList = document.getElementById("students-list");
-    studentsList.innerHTML = "";
-    snap.forEach(snapS => {
-      const s = snapS.val();
-      const div = document.createElement("div");
-      div.innerHTML = `
-        <span>${s.name} (Roll: ${snapS.key})</span>
+  database.ref(`teachers/${currentTeacherId}/classes/${className}/students`).once("value", snap=>{
+    const studentsList=document.getElementById("students-list");
+    studentsList.innerHTML="";
+    snap.forEach(snapS=>{
+      const s=snapS.val();
+      const div=document.createElement("div");
+      div.innerHTML=`<span>${s.name} (Roll: ${snapS.key})</span>
         <button class="btn present" onclick="markAttendance('${snapS.key}','present',this)">Present</button>
-        <button class="btn absent" onclick="markAttendance('${snapS.key}','absent',this)">Absent</button>
-      `;
-      div.style.margin = "10px 0";
+        <button class="btn absent" onclick="markAttendance('${snapS.key}','absent',this)">Absent</button>`;
+      div.style.margin="10px 0";
       studentsList.appendChild(div);
     });
   });
 }
 
-function markAttendance(roll, status, btn) {
-  const date = new Date().toISOString().split('T')[0];
+function markAttendance(roll,status,btn){
+  const date=new Date().toISOString().split('T')[0];
   database.ref(`teachers/${currentTeacherId}/classes/${currentClass}/attendance/${date}/${roll}`).set(status);
-
-  // Change button colors
-  const parent = btn.parentElement;
-  parent.querySelectorAll("button").forEach(b => b.style.background="gray");
-  btn.style.background = status==="present"?"#4CAF50":"#f44336";
+  const parent=btn.parentElement;
+  parent.querySelectorAll("button").forEach(b=>b.style.background="gray");
+  btn.style.background=status==="present"?"#4CAF50":"#f44336";
 }
 
-function generateDefaulter() {
-  const date = prompt("Enter date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+function generateDefaulter(){
+  const date=prompt("Enter date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
   if(!date) return;
-  database.ref(`teachers/${currentTeacherId}/classes/${currentClass}/attendance/${date}`).once("value", snap => {
-    if(!snap.exists()) { alert("No attendance"); return; }
-    let defaulters = [];
-    snap.forEach(snapS => { if(snapS.val()==="absent") defaulters.push(snapS.key); });
+  database.ref(`teachers/${currentTeacherId}/classes/${currentClass}/attendance/${date}`).once("value", snap=>{
+    if(!snap.exists()){ alert("No attendance"); return; }
+    let defaulters=[];
+    snap.forEach(snapS=>{ if(snapS.val()==="absent") defaulters.push(snapS.key); });
     alert(`Defaulters: ${defaulters.join(", ") || "None"}`);
   });
 }
-
-function logout() { firebase.auth().signOut().then(()=>window.location='index.html'); }
 </script>
-
 </body>
 </html>

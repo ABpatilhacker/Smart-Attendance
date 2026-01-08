@@ -5,58 +5,125 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Student Dashboard</title>
 <link rel="stylesheet" href="style.css">
+
+<!-- Firebase Libraries -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-<script src="firebase.js"></script>
+<script src="./firebase.js"></script>
+
+<style>
+body { font-family: Arial, sans-serif; background:#f4f4f9; margin:0; padding:0; }
+header { background:#2196F3; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center; }
+header h1 { margin:0; font-size:1.5rem; }
+.btn { padding:6px 12px; margin:2px; border:none; cursor:pointer; border-radius:4px; }
+.logout { background:#F44336; color:white; }
+.dashboard-container { padding:15px; }
+.class-card { background:white; padding:10px; margin:10px 0; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+.attendance-card { background:#e3f2fd; padding:10px; margin:5px 0; border-radius:6px;}
+</style>
 </head>
 <body>
-<div class="sidebar">
-  <h2>👨‍🎓 Student</h2>
-  <a href="#" class="active">My Attendance</a>
-  <a href="#" class="logout-btn" onclick="auth.signOut().then(()=>window.location='index.html')">Logout</a>
-</div>
 
-<div class="main-content" id="main-content">
-  <h2>My Attendance</h2>
-  <div id="attendance-list"></div>
+<header>
+  <h1>🎓 Student Dashboard</h1>
+  <button class="btn logout" onclick="logout()">Logout</button>
+</header>
+
+<div class="dashboard-container">
+  <h2>Your Classes</h2>
+  <div id="classes-list"></div>
+
+  <div id="attendance-section" style="display:none;">
+    <h3 id="class-title"></h3>
+    <p>Select Date: <input type="date" id="attendance-date" onchange="loadAttendance()"></p>
+    <div id="attendance-list"></div>
+    <p id="percentage"></p>
+  </div>
 </div>
 
 <script>
+let studentUid = "";
+let studentRoll = "";
+let allClasses = {}; // store teacher/class mapping for this student
+let currentClass = "";
+
+// Check login
 auth.onAuthStateChanged(user=>{
-  if(!user) window.location='login.html';
-  const uid=user.uid;
-  database.ref("students/"+uid).once("value").then(snap=>{
-    const roll=snap.val().rollNumber;
-    loadAttendance(roll);
-  });
+  if(user){
+    studentUid = user.uid;
+    loadStudentClasses();
+  } else {
+    window.location="login.html";
+  }
 });
 
-function loadAttendance(roll){
-  const list=document.getElementById("attendance-list");
-  list.innerHTML="";
-  database.ref("teachers").once("value", snapT=>{
-    snapT.forEach(t=>{
-      const tVal=t.val();
-      if(!tVal.classes) return;
-      Object.keys(tVal.classes).forEach(cls=>{
-        const att=tVal.classes[cls].attendance;
-        let total=0, present=0;
-        if(att){
-          Object.values(att).forEach(date=>{
-            if(date[roll]){
-              total++;
-              if(date[roll]==="present") present++;
-            }
-          });
-          const div=document.createElement("div");
-          div.className="card";
-          div.innerHTML=`<h4>${cls}</h4><p>Present: ${present}/${total}</p>
-            <p>Attendance: ${total?Math.round((present/total)*100):0}%</p>`;
-          list.appendChild(div);
-        }
+function logout(){ auth.signOut().then(()=> window.location="login.html"); }
+
+// Load classes for this student
+function loadStudentClasses(){
+  const classesListDiv = document.getElementById("classes-list");
+  classesListDiv.innerHTML = "";
+  allClasses = {};
+
+  database.ref("teachers").once("value", snapshot=>{
+    snapshot.forEach(teacherSnap=>{
+      const teacherUid = teacherSnap.key;
+      const teacher = teacherSnap.val();
+      if(!teacher.classes) return;
+      Object.keys(teacher.classes).forEach(className=>{
+        const students = teacher.classes[className].students || {};
+        Object.keys(students).forEach(roll=>{
+          if(students[roll] && students[roll].uid===studentUid || students[roll].rollNumber===roll){
+            // student belongs to this class
+            allClasses[`${teacherUid}|${className}`] = { teacherUid, className, roll };
+            const div = document.createElement("div");
+            div.className = "class-card";
+            div.innerHTML = `<strong>${className}</strong> <button class="btn" onclick="viewAttendance('${teacherUid}','${className}','${roll}')">View Attendance</button>`;
+            classesListDiv.appendChild(div);
+          }
+        });
       });
     });
+  });
+}
+
+// View attendance for a class
+function viewAttendance(teacherUid,className,roll){
+  currentClass = `${teacherUid}|${className}`;
+  studentRoll = roll;
+  document.getElementById("attendance-section").style.display = "block";
+  document.getElementById("class-title").textContent = className;
+  document.getElementById("attendance-date").valueAsDate = new Date(); // default today
+  loadAttendance();
+}
+
+// Load attendance for selected date
+function loadAttendance(){
+  const date = document.getElementById("attendance-date").value;
+  if(!date) return;
+  const [teacherUid,className] = currentClass.split("|");
+  database.ref(`teachers/${teacherUid}/classes/${className}/attendance/${date}/${studentRoll}`).once("value", snap=>{
+    const status = snap.val() || "No record";
+    const attendanceDiv = document.getElementById("attendance-list");
+    attendanceDiv.innerHTML = `<div class="attendance-card">Attendance on ${date}: <strong>${status}</strong></div>`;
+    calculatePercentage(teacherUid,className,studentRoll);
+  });
+}
+
+// Calculate attendance percentage
+function calculatePercentage(teacherUid,className,roll){
+  database.ref(`teachers/${teacherUid}/classes/${className}/attendance`).once("value", snap=>{
+    let total = 0, present = 0;
+    snap.forEach(dateSnap=>{
+      const status = dateSnap.child(roll).val();
+      if(status){
+        total++;
+        if(status==="present") present++;
+      }
+    });
+    const percent = total===0 ? 0 : Math.round((present/total)*100);
+    document.getElementById("percentage").textContent = `Attendance Percentage: ${percent}% (${present}/${total})`;
   });
 }
 </script>

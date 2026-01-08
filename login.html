@@ -3,41 +3,60 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login</title>
+  <title>Login - Smart Attendance</title>
 
   <link rel="stylesheet" href="./style.css">
-</head>
-<body>
-<div class="main" style="max-width:400px;margin:auto;margin-top:100px;">
-  <h1 style="text-align:center;">Login</h1>
-  <input type="email" id="email" placeholder="Email" style="width:100%;padding:8px;margin:5px 0;"><br>
-  <input type="password" id="password" placeholder="Password" style="width:100%;padding:8px;margin:5px 0;"><br>
-  <button class="btn" onclick="login()">Login</button>
-  <p id="msg" style="color:red;"></p>
-</div>
 
-<script>
-function login(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  auth.signInWithEmailAndPassword(email,password)
-    .then(user=>{
-      const uid = user.user.uid;
-      // redirect based on role (simple example)
-      database.ref("teachers/"+uid).once("value").then(snap=>{
-        if(snap.exists()) window.location.href="teacher-dashboard.html";
-        else if(email.includes("admin")) window.location.href="admin-dashboard.html";
-        else window.location.href="student-dashboard.html";
-      });
-    })
-    .catch(err=>{ document.getElementById("msg").textContent=err.message; });
-}
-</script>
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="./firebase.js"></script>
+</head>
 
-<script src="./firebase.js"></script>
-<script src="./login.js"></script>
+<body>
+
+  <div class="login-container">
+    <h2>Login</h2>
+
+    <select id="role">
+      <option value="">Select Role</option>
+      <option value="admin">Admin</option>
+      <option value="teacher">Teacher</option>
+      <option value="student">Student</option>
+    </select>
+
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+
+    <button class="btn" onclick="loginUser()">Login</button>
+
+    <p id="msg"></p>
+  </div>
+
+  <script>
+    function loginUser() {
+      const role = document.getElementById("role").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("msg");
+
+      if (!role || !email || !password) {
+        msg.innerText = "Please fill all fields";
+        return;
+      }
+
+      firebase.auth().signInWithEmailAndPassword(email, password)
+        .then(() => {
+          if (role === "admin") location.href = "admin.html";
+          if (role === "teacher") location.href = "teacher.html";
+          if (role === "student") location.href = "student.html";
+        })
+        .catch(error => {
+          msg.innerText = error.message;
+        });
+    }
+  </script>
+
 </body>
 </html>

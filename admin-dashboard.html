@@ -6,39 +6,112 @@
 <title>Admin Dashboard</title>
 <link rel="stylesheet" href="style.css">
 
-<!-- Firebase libraries -->
+<!-- Firebase Libraries -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 <script src="firebase.js"></script>
+
+<style>
+  body { font-family: Arial, sans-serif; background:#f4f4f9; margin:0; padding:0; }
+  header { background:#4CAF50; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center; }
+  header h1 { margin:0; font-size:1.5rem; }
+  .btn { padding:6px 12px; margin:2px; border:none; cursor:pointer; border-radius:4px; }
+  .logout { background:#F44336; color:white; }
+  .dashboard-container { padding:15px; }
+  .teacher-card { background:white; padding:10px; margin:10px 0; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+  .teacher-card h3 { margin:0 0 5px 0; }
+  .teacher-card ul { margin:0; padding-left:20px; }
+  .teacher-card button { background:#2196F3; color:white; }
+  #student-list { margin-top:10px; padding:10px; background:#e3f2fd; border-radius:6px; display:none; }
+</style>
 </head>
 <body>
-<div class="dashboard-container">
-  <header>
-    <h1>🧑‍💼 Admin Dashboard</h1>
-    <button class="btn logout" onclick="signOutUser()">Logout</button>
-  </header>
 
-  <section>
-    <h2>All Teachers</h2>
-    <div id="teachers-list"></div>
-  </section>
+<header>
+  <h1>🧑‍💼 Admin Dashboard</h1>
+  <button class="btn logout" onclick="signOutUser()">Logout</button>
+</header>
+
+<div class="dashboard-container">
+  <h2>All Teachers</h2>
+  <div id="teachers-list"></div>
+
+  <div id="student-list">
+    <h3 id="class-title"></h3>
+    <button class="btn" onclick="generateDefaulter()">Generate Defaulter List</button>
+    <div id="students-attendance"></div>
+  </div>
 </div>
 
 <script>
   checkAuth();
 
   const teachersList = document.getElementById("teachers-list");
+  const studentListDiv = document.getElementById("student-list");
+  const studentsAttendanceDiv = document.getElementById("students-attendance");
+  const classTitle = document.getElementById("class-title");
 
+  // Load all teachers
   database.ref("teachers").on("value", snapshot => {
     teachersList.innerHTML = "";
-    snapshot.forEach(child => {
-      const teacher = child.val();
-      const div = document.createElement("div");
-      div.textContent = "Teacher ID: " + child.key;
-      teachersList.appendChild(div);
+    snapshot.forEach(teacherSnap => {
+      const teacher = teacherSnap.val();
+      const teacherCard = document.createElement("div");
+      teacherCard.className = "teacher-card";
+      teacherCard.innerHTML = `
+        <h3>${teacher.name || "No Name"} (${teacher.email || "No Email"})</h3>
+        <p>Classes:</p>
+        <ul>
+          ${teacher.classes ? Object.keys(teacher.classes).map(c => `<li>${c} <button onclick="viewClass('${teacherSnap.key}','${c}')">View Students</button></li>`).join('') : "<li>No classes</li>"}
+        </ul>
+      `;
+      teachersList.appendChild(teacherCard);
     });
   });
+
+  // View a class
+  let currentTeacherId = "";
+  let currentClass = "";
+
+  function viewClass(teacherId, className) {
+    currentTeacherId = teacherId;
+    currentClass = className;
+    classTitle.textContent = `Class: ${className}`;
+    studentsAttendanceDiv.innerHTML = "";
+    studentListDiv.style.display = "block";
+
+    database.ref(`teachers/${teacherId}/classes/${className}/students`).once("value", snap => {
+      if(!snap.exists()) {
+        studentsAttendanceDiv.innerHTML = "No students added yet.";
+        return;
+      }
+      snap.forEach(studentSnap => {
+        const student = studentSnap.val();
+        const div = document.createElement("div");
+        div.textContent = `${student.name || "No Name"} (Roll: ${studentSnap.key})`;
+        studentsAttendanceDiv.appendChild(div);
+      });
+    });
+  }
+
+  // Generate defaulter list for today
+  function generateDefaulter() {
+    const date = prompt("Enter date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+    if(!date) return;
+
+    database.ref(`teachers/${currentTeacherId}/classes/${currentClass}/attendance/${date}`).once("value", snap => {
+      if(!snap.exists()) {
+        alert("No attendance data for this date.");
+        return;
+      }
+      let defaulters = [];
+      snap.forEach(studentSnap => {
+        if(studentSnap.val() === "absent") defaulters.push(studentSnap.key);
+      });
+      alert(`Defaulters on ${date}: \n${defaulters.join(", ") || "None"}`);
+    });
+  }
 </script>
 </body>
 </html>

@@ -1,6 +1,27 @@
-<!-- Same sidebar, just change functions for teacher -->
-<h2>Your Classes</h2>
-<div id="class-list"></div>
+<!-- teacher.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+<script src="firebase.js"></script>
+</head>
+<body>
+<div class="sidebar">
+  <h2>👨‍🏫 Teacher</h2>
+  <a href="#" onclick="loadClasses()">My Classes</a>
+  <a href="#" class="logout-btn" onclick="auth.signOut().then(()=>window.location='index.html')">Logout</a>
+</div>
+
+<div class="main-content" id="main-content">
+  <h2>My Classes</h2>
+  <div id="class-list"></div>
+</div>
 
 <script>
 let currentTeacherId="";
@@ -10,7 +31,6 @@ auth.onAuthStateChanged(user=>{
   loadClasses();
 });
 
-// Load teacher classes
 function loadClasses(){
   database.ref(`teachers/${currentTeacherId}/classes`).once('value', snap=>{
     const div=document.getElementById("class-list");
@@ -26,7 +46,7 @@ function loadClasses(){
   });
 }
 
-// View students and mark attendance
+// View students
 function viewClass(className){
   const studentDiv=document.getElementById("main-content");
   studentDiv.innerHTML=`<h3>${className} Students</h3><div id="students-list"></div>`;
@@ -58,7 +78,6 @@ function addStudentForm(className){
     <input type="text" id="sroll" placeholder="Roll Number">
     <button class="btn" onclick="addStudent('${className}')">Add</button>`;
 }
-
 function addStudent(className){
   const name=document.getElementById("sname").value;
   const roll=document.getElementById("sroll").value;
@@ -68,3 +87,5 @@ function addStudent(className){
   loadClasses();
 }
 </script>
+</body>
+</html>

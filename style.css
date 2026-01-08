@@ -37,3 +37,33 @@ body {
 .btn:hover {
   background: #e8f5e9;
 }
+/* Login Page */
+.login-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #2196F3, #0d47a1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.login-container h2 {
+  color: white;
+  margin-bottom: 15px;
+}
+
+.login-container input,
+.login-container select {
+  width: 260px;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 6px;
+  border: none;
+  font-size: 1rem;
+}
+
+.login-container p {
+  color: white;
+  margin-top: 10px;
+}

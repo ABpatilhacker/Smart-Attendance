@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Teacher Dashboard</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <h2>Teacher</h2>
+    <a>Attendance</a>
+    <a onclick="logout()">Logout</a>
+  </div>
+
+  <div class="content">
+    <h2>Mark Attendance</h2>
+    <div id="list"></div>
+
+    <button onclick="showReport()">Show Report</button>
+    <button onclick="printReport()">Print / PDF</button>
+
+    <div id="report"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="../js/firebase.js"></script>
+<script src="../js/teacher.js"></script>
+</body>
+</html>

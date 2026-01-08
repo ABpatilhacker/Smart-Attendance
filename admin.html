@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <h2>Admin</h2>
+    <a onclick="loadDef()">Defaulters</a>
+    <a onclick="logout()">Logout</a>
+  </div>
+
+  <div class="content">
+    <h2>Defaulter List</h2>
+    <div id="def"></div>
+    <button onclick="window.print()">Print</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="../js/firebase.js"></script>
+
+<script>
+const db=firebase.database();
+function loadDef(){
+  def.innerHTML="";
+  db.ref("attendance").once("value",s=>{
+    let t=0,c={};
+    s.forEach(d=>{
+      t++;
+      d.forEach(r=>{
+        if(!c[r.key])c[r.key]=0;
+        if(r.val()=="P")c[r.key]++;
+      });
+    });
+    for(let r in c){
+      let p=(c[r]/t)*100;
+      if(p<75)def.innerHTML+=`<p>Roll ${r}: ${p.toFixed(2)}%</p>`;
+    }
+  });
+}
+function logout(){
+ firebase.auth().signOut().then(()=>location.href="../index.html");
+}
+</script>
+</body>
+</html>

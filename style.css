@@ -1,0 +1,14 @@
+body{margin:0;font-family:Arial;background:#f1f5f9}
+.header,.footer{background:#1e293b;color:#fff;text-align:center;padding:15px}
+.hero{display:flex;justify-content:center;align-items:center;gap:20px;padding:20px}
+.hero img{width:150px}
+.login-buttons a{padding:10px 15px;background:#2193b0;color:#fff;margin:5px;display:inline-block;text-decoration:none;border-radius:5px}
+.card{background:#fff;padding:20px;margin:50px auto;width:300px;border-radius:8px}
+input,button{width:100%;padding:10px;margin:5px 0}
+.app{display:flex}
+.sidebar{width:200px;background:#1e293b;color:#fff;padding:15px}
+.sidebar a{display:block;margin:10px 0;cursor:pointer}
+.content{padding:20px;flex:1}
+.present{background:green;color:white}
+.absent{background:red;color:white}
+@media print{.sidebar,button{display:none}}

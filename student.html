@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="card">
+  <h2>Student Panel</h2>
+  <p>View attendance only</p>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="../js/firebase.js"></script>
+<script>
+function logout(){
+ firebase.auth().signOut().then(()=>location.href="../index.html");
+}
+</script>
+</body>
+</html>

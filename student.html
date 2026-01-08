@@ -15,62 +15,55 @@
 
 <header class="dashboard-header">
   <h1>🎓 Student Dashboard</h1>
-  <button class="btn logout" onclick="logout()">Logout</button>
+  <button class="btn logout" onclick="firebase.auth().signOut().then(()=>window.location='index.html')">Logout</button>
 </header>
 
 <div class="dashboard-content">
-  <h2>Your Classes Attendance</h2>
+  <h2>Your Attendance</h2>
   <div id="attendance-list" class="card-container"></div>
 </div>
 
 <script>
-firebase.auth().onAuthStateChanged(user => {
+firebase.auth().onAuthStateChanged(user=>{
   if(!user) window.location='login.html';
-  const uid = user.uid;
+  const uid=user.uid;
   database.ref("students").once("value", snap=>{
     snap.forEach(snapS=>{
-      const s = snapS.val();
-      if(s.uid===uid || snapS.key===uid){ // match student
-        loadAttendance(s.rollNumber);
-      }
+      const s=snapS.val();
+      if(s.uid===uid || snapS.key===uid) loadAttendance(s.rollNumber);
     });
   });
 });
 
-function loadAttendance(roll) {
-  const div = document.getElementById("attendance-list");
-  div.innerHTML = "";
+function loadAttendance(roll){
+  const div=document.getElementById("attendance-list");
+  div.innerHTML="";
   database.ref("teachers").once("value", teachersSnap=>{
     teachersSnap.forEach(tSnap=>{
-      const t = tSnap.val();
+      const t=tSnap.val();
       if(!t.classes) return;
       Object.keys(t.classes).forEach(cls=>{
-        const attRef = t.classes[cls].attendance;
+        const attRef=t.classes[cls].attendance;
         if(!attRef) return;
         let total=0, present=0;
-        if(attRef){
-          Object.values(attRef).forEach(date=>{
-            if(date[roll]){
-              total++;
-              if(date[roll]==="present") present++;
-            }
-          });
-        }
+        Object.values(attRef).forEach(date=>{
+          if(date[roll]){
+            total++;
+            if(date[roll]==="present") present++;
+          }
+        });
         if(total>0){
-          const card = document.createElement("div");
+          const card=document.createElement("div");
           card.className="card";
-          card.innerHTML = `<h3>${cls}</h3>
-                            <p>Present: ${present} / ${total}</p>
-                            <p>Attendance: ${Math.round((present/total)*100)}%</p>`;
+          card.innerHTML=`<h3>${cls}</h3>
+                          <p>Present: ${present} / ${total}</p>
+                          <p>Attendance: ${Math.round((present/total)*100)}%</p>`;
           div.appendChild(card);
         }
       });
     });
   });
 }
-
-function logout() { firebase.auth().signOut().then(()=>window.location='index.html'); }
 </script>
-
 </body>
 </html>

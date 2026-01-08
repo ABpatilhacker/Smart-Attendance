@@ -12,46 +12,49 @@
 <script src="firebase.js"></script>
 </head>
 <body>
-<header class="dashboard-header">
-  <h1>🧑‍💼 Admin Dashboard</h1>
-  <button class="btn logout" onclick="firebase.auth().signOut().then(()=>window.location='index.html')">Logout</button>
-</header>
 
-<div class="dashboard-content">
-  <h2>All Teachers</h2>
-  <div id="teachers-list" class="card-container"></div>
+<div class="sidebar">
+  <h2>🧑‍💼 Admin</h2>
+  <a href="#" class="active">Dashboard</a>
+  <a href="#" onclick="showTeachers()">Teachers</a>
+  <a href="#" onclick="showStudents()">Students</a>
+  <a href="#" class="logout-btn" onclick="firebase.auth().signOut().then(()=>window.location='index.html')">Logout</a>
+</div>
 
-  <h2>All Students</h2>
-  <div id="students-list" class="card-container"></div>
+<div class="main-content">
+  <h2>Dashboard</h2>
+  <div id="content-list"></div>
 </div>
 
 <script>
 firebase.auth().onAuthStateChanged(user=>{ if(!user) window.location='index.html'; });
+const contentList = document.getElementById("content-list");
 
-const teachersList = document.getElementById("teachers-list");
-const studentsList = document.getElementById("students-list");
-
-database.ref("teachers").on("value", snapshot => {
-  teachersList.innerHTML="";
-  snapshot.forEach(snap=>{
-    const t=snap.val();
-    const div=document.createElement("div");
-    div.className="card";
-    div.innerHTML=`<h3>👩‍🏫 ${t.name}</h3><p>${t.email}</p><p>Classes: ${t.classes ? Object.keys(t.classes).join(", ") : "None"}</p>`;
-    teachersList.appendChild(div);
+function showTeachers(){
+  contentList.innerHTML="<h3>All Teachers</h3>";
+  database.ref("teachers").once("value", snap=>{
+    snap.forEach(snapT=>{
+      const t=snapT.val();
+      const div=document.createElement("div");
+      div.className="card";
+      div.innerHTML=`<h3>${t.name}</h3><p>${t.email}</p><p>Classes: ${t.classes ? Object.keys(t.classes).join(", ") : "None"}</p>`;
+      contentList.appendChild(div);
+    });
   });
-});
+}
 
-database.ref("students").on("value", snapshot=>{
-  studentsList.innerHTML="";
-  snapshot.forEach(snap=>{
-    const s=snap.val();
-    const div=document.createElement("div");
-    div.className="card";
-    div.innerHTML=`<h3>🎓 ${s.name}</h3><p>Roll: ${s.rollNumber}</p>`;
-    studentsList.appendChild(div);
+function showStudents(){
+  contentList.innerHTML="<h3>All Students</h3>";
+  database.ref("students").once("value", snap=>{
+    snap.forEach(snapS=>{
+      const s=snapS.val();
+      const div=document.createElement("div");
+      div.className="card";
+      div.innerHTML=`<h3>${s.name}</h3><p>Roll: ${s.rollNumber}</p>`;
+      contentList.appendChild(div);
+    });
   });
-});
+}
 </script>
 </body>
 </html>

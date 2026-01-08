@@ -6,32 +6,16 @@
 <title>Teacher Dashboard</title>
 <link rel="stylesheet" href="style.css">
 
-<!-- Firebase Libraries -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 <script src="firebase.js"></script>
-
-<style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f0f4f8; }
-header { background:#4CAF50; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center; }
-header h1 { margin:0; font-size:1.5rem; }
-.sidebar { width:200px; background:#333; color:white; height:100vh; position:fixed; top:0; left:0; padding-top:60px; display:flex; flex-direction:column; }
-.sidebar button { background:none; border:none; color:white; padding:12px; text-align:left; width:100%; cursor:pointer; }
-.sidebar button:hover { background:#575757; }
-.main { margin-left:200px; padding:20px; }
-.btn { padding:6px 12px; margin:2px; border:none; cursor:pointer; border-radius:4px; }
-.present { background:#4CAF50; color:white; }
-.absent { background:#F44336; color:white; }
-.student-row { display:flex; justify-content:space-between; align-items:center; background:white; padding:8px; margin:4px 0; border-radius:5px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
-.print-btn { background:#2196F3; color:white; margin-top:10px; }
-</style>
 </head>
 <body>
 
 <header>
   <h1>👩‍🏫 Teacher Dashboard</h1>
-  <button class="btn" onclick="signOutUser()">Logout</button>
+  <button class="btn logout" onclick="signOutUser()">Logout</button>
 </header>
 
 <div class="sidebar">
@@ -40,14 +24,12 @@ header h1 { margin:0; font-size:1.5rem; }
 </div>
 
 <div class="main">
-  <!-- Classes Section -->
   <div id="classes-section">
     <h2>My Classes</h2>
     <div id="classes-list"></div>
     <button class="btn" onclick="addClass()">+ Add Class</button>
   </div>
 
-  <!-- Attendance Section -->
   <div id="attendance-section" style="display:none;">
     <h2>Attendance</h2>
     <h3 id="class-title">Select a class to mark attendance</h3>
@@ -58,62 +40,55 @@ header h1 { margin:0; font-size:1.5rem; }
 
 <script>
 checkAuth();
-
 const classesList = document.getElementById("classes-list");
 const attendanceList = document.getElementById("attendance-list");
 const classTitle = document.getElementById("class-title");
-
 let currentClass = "";
 
-// Show/Hide sections
-function showSection(sectionId) {
-  document.getElementById('classes-section').style.display = 'none';
-  document.getElementById('attendance-section').style.display = 'none';
-  document.getElementById(sectionId).style.display = 'block';
+function showSection(sectionId){
+  document.getElementById('classes-section').style.display='none';
+  document.getElementById('attendance-section').style.display='none';
+  document.getElementById(sectionId).style.display='block';
 }
 
-// Load teacher classes
-function loadClasses() {
+// Load classes
+function loadClasses(){
   const uid = auth.currentUser.uid;
-  database.ref("teachers/" + uid + "/classes").on("value", snapshot => {
-    classesList.innerHTML = "";
-    snapshot.forEach(child => {
-      const className = child.key;
+  database.ref("teachers/"+uid+"/classes").on("value", snap=>{
+    classesList.innerHTML="";
+    snap.forEach(child=>{
       const btn = document.createElement("button");
-      btn.textContent = className;
-      btn.className = "btn";
-      btn.onclick = () => loadAttendance(className);
+      btn.textContent = child.key;
+      btn.className="btn";
+      btn.onclick = ()=>loadAttendance(child.key);
       classesList.appendChild(btn);
     });
   });
 }
-
 loadClasses();
 
-// Add new class
-function addClass() {
-  const className = prompt("Enter class name:");
-  if(!className) return;
+function addClass(){
+  const cname = prompt("Enter class name:");
+  if(!cname) return;
   const uid = auth.currentUser.uid;
-  database.ref("teachers/" + uid + "/classes/" + className).set({ createdAt: Date.now() });
+  database.ref("teachers/"+uid+"/classes/"+cname).set({createdAt:Date.now()});
 }
 
-// Load attendance for a class
-function loadAttendance(className) {
-  currentClass = className;
+// Load Attendance
+function loadAttendance(cname){
+  currentClass=cname;
   showSection('attendance-section');
-  classTitle.textContent = "Class: " + className;
-  attendanceList.innerHTML = "";
-
-  const uid = auth.currentUser.uid;
-  database.ref("teachers/" + uid + "/classes/" + className + "/students").once("value", snap => {
-    if(!snap.exists()) { attendanceList.innerHTML = "No students added."; return; }
-    snap.forEach(studentSnap => {
+  classTitle.textContent="Class: "+cname;
+  attendanceList.innerHTML="";
+  const uid=auth.currentUser.uid;
+  database.ref("teachers/"+uid+"/classes/"+cname+"/students").once("value", snap=>{
+    if(!snap.exists()){attendanceList.innerHTML="No students added."; return;}
+    snap.forEach(studentSnap=>{
       const student = studentSnap.val();
       const div = document.createElement("div");
-      div.className = "student-row";
-      div.innerHTML = `
-        <span>${student.name || "No Name"} (Roll: ${studentSnap.key})</span>
+      div.className="student-row";
+      div.innerHTML=`
+        <span>${student.name||"No Name"} (Roll: ${studentSnap.key})</span>
         <div>
           <button class="btn present" onclick="markAttendance('${studentSnap.key}','present',this)">Present</button>
           <button class="btn absent" onclick="markAttendance('${studentSnap.key}','absent',this)">Absent</button>
@@ -124,22 +99,18 @@ function loadAttendance(className) {
   });
 }
 
-// Mark attendance
-function markAttendance(studentId, status, btn) {
-  const uid = auth.currentUser.uid;
-  const date = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
-  database.ref(`teachers/${uid}/classes/${currentClass}/attendance/${date}/${studentId}`).set(status);
-
-  // Change button colors
-  const parent = btn.parentElement;
-  parent.querySelectorAll('button').forEach(b => b.style.opacity=0.6);
+function markAttendance(sid,status,btn){
+  const uid=auth.currentUser.uid;
+  const date=new Date().toISOString().split('T')[0];
+  database.ref(`teachers/${uid}/classes/${currentClass}/attendance/${date}/${sid}`).set(status);
+  const parent=btn.parentElement;
+  parent.querySelectorAll('button').forEach(b=>b.style.opacity=0.6);
   btn.style.opacity=1;
 }
 
-// Print/Download Report
-function printReport() {
+function printReport(){
   const report = attendanceList.innerHTML;
-  const newWin = window.open("", "Print", "width=800,height=600");
+  const newWin=window.open("","Print","width=800,height=600");
   newWin.document.write(`<html><head><title>Attendance Report</title></head><body>${report}</body></html>`);
   newWin.document.close();
   newWin.print();

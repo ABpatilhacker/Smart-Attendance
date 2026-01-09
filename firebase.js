@@ -1,15 +1,32 @@
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyB3ytMC77uaEwdqmXgr1t-PN0z3qV_Dxi8",
-    authDomain: "smart-attendance-system-17e89.firebaseapp.com",
-    databaseURL: "https://smart-attendance-system-17e89-default-rtdb.firebaseio.com",
-    projectId: "smart-attendance-system-17e89",
-    storageBucket: "smart-attendance-system-17e89.appspot.com",
-    messagingSenderId: "168700970246",
-    appId: "1:168700970246:web:392156387db81e92544a87"
-  };
+function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const database = firebase.database();
+  firebase.auth().signInWithEmailAndPassword(email, password)
+    .then((userCred) => {
+      const uid = userCred.user.uid;
+
+      firebase.database().ref("users/" + uid).once("value")
+        .then(snapshot => {
+          if (!snapshot.exists()) {
+            alert("No role assigned to this user");
+            return;
+          }
+
+          const role = snapshot.val().role;
+
+          if (role === "admin") {
+            window.location.href = "admin.html";
+          } 
+          else if (role === "teacher") {
+            window.location.href = "teacher.html";
+          } 
+          else if (role === "student") {
+            window.location.href = "student.html";
+          }
+        });
+    })
+    .catch(error => alert(error.message));
+}
 </script>
